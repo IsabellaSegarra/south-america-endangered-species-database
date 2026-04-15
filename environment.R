@@ -10,6 +10,7 @@ install.packages("dplyr")
 install.packages("data.table")
 install.packages("rredlist")
 devtools::install_github("IUCN-UK/iucnredlist")
+install.packages("rgbif")
 
 #Load packages 
 library(here)
