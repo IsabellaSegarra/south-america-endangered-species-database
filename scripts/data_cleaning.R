@@ -22,6 +22,9 @@ redlist <- read_csv(here("data", "raw", "points_data.csv"))
 
 pa <- st_read(here("data","raw", "WDPA_WDOECM_Apr2026_Public_SA_shp_0"))
 
+# Countries boundaries ----
+countries_sf <- st_read("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+
 # GBIF vernacular/common names data ----
 vernacular <- read_tsv(here("data", "raw", "VernacularName.tsv"))
 
@@ -31,8 +34,8 @@ vernacular <- read_tsv(here("data", "raw", "VernacularName.tsv"))
 vernacular_en_sp <- vernacular %>%
   clean_names() %>% 
   filter(language %in% c("en", "es")) %>% 
-  pivot_wider(names_from = language, values_from = vernacularName) %>% 
-  select(en, es, taxonID)
+  pivot_wider(names_from = language, values_from = vernacular_name) %>% 
+  select(taxon_id, en, es)
 
 common_names_tbl <- vernacular %>%
   clean_names() %>% 
@@ -41,6 +44,8 @@ common_names_tbl <- vernacular %>%
   slice(1) %>%
   ungroup() %>%
   pivot_wider(id_cols = taxon_id, names_from = language, values_from = vernacular_name)
+
+species <- unique(species_tbl$scientific_name)
 
 common_names_tbl <- left_join(species_tbl, common_names_tbl, by = c("species_key = taxon_id"))
 
@@ -97,7 +102,7 @@ species_occurrence_tbl <- occurrences_tbl %>%
 
 #..... Protected Areas ......
 
-# join with occurence, aggregate points - create binary indicator (within PA YES/NO --> protected_area ID)
+# join with occurence, create binary indicator (within PA YES/NO --> protected_area ID)
 
 protected_areas_tbl <- pa %>% 
   clean_names() %>% 
@@ -107,23 +112,18 @@ protected_areas_tbl <- pa %>%
          ) %>% 
   select(pa_id, name_eng, name_sp, desig_eng, desig_sp, desig_type,iucn_cat, realm, status_yr, gov_type, geometry)
 
+# Add countries to protected-areas table
+
+countries_sa <- countries_sf %>% 
+  filter(name %in% c("Colombia", "Brazil", "Venezuela", "Argentina", 
+                     "Chile", "Peru", "Bolivia", "Ecuador", "Uruguay"))
+
+protected_areas_tbl <- st_join(protected_areas_tbl,
+                               countries_sa %>% select(ISO3166.1.Alpha.2, geometry),
+                               join = st_intersects) %>%
+  rename(country_code = ISO3166.1.Alpha.2)
 
 # Species protection status table 
-
-# -- Diagnositc checks --
-st_crs(occurrences_tbl) == st_crs(pa)
-
-protected_areas_tbl <- st_make_valid(protected_areas_tbl)
-occurrences_tbl <- st_make_valid(occurrences_tbl)
-
-# check if points overlap
-plot(st_geometry(pa))
-plot(st_geometry(occurrences_tbl), add = TRUE, col = "red")
-
-st_bbox(occurrences_tbl)
-st_bbox(protected_areas_tbl)
-
-# --- Now join---
 
 # Transform to a projected CRS for accurate buffering in metres
 occurrences_proj <- st_transform(occurrences_tbl, 3857)
@@ -141,7 +141,10 @@ protection_sts_tbl <- st_join(occurrences_proj %>% select(species_key, geometry)
                             join = st_intersects) %>%
   mutate(in_protected_area = !is.na(pa_id))
 
+
 # Export as csv into data_processed folder 
+
+
 
 species_tbl <- write_csv(species_tbl, "data/processed/species.csv")
 occurrences_tbl <- write_csv(occurrences_tbl, "data/processed/occurrences.csv")
