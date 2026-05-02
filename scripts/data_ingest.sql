@@ -10,18 +10,19 @@ CREATE TABLE species AS
 CREATE TABLE protected_areas AS
     SELECT * FROM read_csv_auto('data/processed/protected_areas.csv');
 
+
 --- Countries Data ---
 CREATE TABLE countries AS
     SELECT * FROM read_csv_auto('data/processed/countries.csv');
 
 --- Protection Status Data ---
-CREATE TABLE protection_sts AS
+CREATE TABLE protection_status AS
     SELECT * FROM read_csv_auto('data/processed/protection_sts.csv');
+
 
 --- Occurrences RAW Data ---
 CREATE TABLE occurrences_raw AS
-    SELECT * FROM read_csv_auto('data/processed/occurrences_raw.csv',
-  types = {'individual_count': 'VARCHAR'});
+    SELECT * FROM read_csv_auto('data/processed/occurrences_raw.csv');
 
 --- Ocurrences AGGREGATED Data ---
 CREATE TABLE occurrences AS
