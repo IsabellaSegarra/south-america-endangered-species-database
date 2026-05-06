@@ -1,0 +1,55 @@
+---
+title: "data_viz"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(DBI)
+library(dbplyr)
+library(duckdb)
+
+conn <- DBI::dbConnect(duckdb::duckdb(),
+                       dbdir = "../threatened_sa.duckdb")
+
+DBI::dbListTables(conn)
+```
+
+```{r}
+protected_areas_db <- tbl(conn, " protected_areas")
+protected_areas_db
+```
+
+```{sql connection=conn}
+
+  SELECT c.country_name, COUNT(*) as total_occurrences FROM occurrences o
+    JOIN protection_status ps ON o.species_id = ps.species_id
+    JOIN countries c ON o.country_code = c.country_code
+    WHERE ps.in_protected_area = TRUE
+    GROUP BY o.country_code, c.country_name
+    ORDER BY total_occurrences DESC;
+
+```
+
+```{r}
+# Step 1: Extract the dataframes used for this join
+occurrences_db <- tbl(conn, "occurrences")
+protected_areas_db <- tbl(conn, "protected_areas")
+countries_db <- tbl(conn, "countries")
+
+# Step 2: Reproduce the query 
+occurrences_db %>%
+  inner_join(protected_areas_db, by = "species_id") %>%
+  inner_join(countries_db, by = "country_code") %>%
+  filter(in_protected_area == TRUE) %>%
+  group_by(country_code, country_name) %>%
+  summarise(total_occurrences = n()) %>%
+  arrange(desc(total_occurrences))
+
+```
+
+
+```{r}
+DBI::dbDisconnect(conn, shutdown = TRUE)
+```
+

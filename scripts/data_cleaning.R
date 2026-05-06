@@ -63,24 +63,20 @@ raw_occurrences_tbl <- gbif %>%
     !is.na(decimal_longitude),
     coordinate_uncertainty_in_meters < 10000, # drop anything with >10km uncertainty
     occurrence_status == "PRESENT")  %>% # Drop any occurrences that are absent
-  st_as_sf(coords = c("decimal_longitude", "decimal_latitude"), crs = 4326) %>% 
-  mutate(event_date = as_date(event_date)) %>% 
-  select(species_key, country_code, event_date, year, month, day, occurrence_status, individual_count) %>% 
-  rename(species_id = species_key) 
-
-raw_occurrences_tbl <- gbif %>%
-  clean_names()%>% 
-  filter(
-    !is.na(decimal_latitude),
-    !is.na(decimal_longitude),
-    !is.na(event_date),
-    !is.na(individual_count),
-    coordinate_uncertainty_in_meters < 10000, # drop anything with >10km uncertainty
-    occurrence_status == "PRESENT")  %>% # Drop any occurrences that are absent
-  st_as_sf(coords = c("decimal_longitude", "decimal_latitude"), crs = 4326) %>% 
-  mutate(event_date = as_date(event_date)) %>% 
-  select(species_key, country_code, event_date, year, month, day, occurrence_status, individual_count) %>% 
-  rename(species_id = species_key) 
+  st_as_sf(coords = c("decimal_longitude", "decimal_latitude"), crs = 4326) %>% # georeference
+  mutate(event_date = as_date(event_date), 
+         individual_count = replace_na(individual_count, 0), 
+         # Impute event date from month, day, and year columns
+         event_date = case_when(
+           !is.na(event_date) ~ event_date,
+           !is.na(year) & !is.na(month) & !is.na(day) ~ as_date(paste(year, month, day, sep = "-")),
+           !is.na(year) & !is.na(month) ~ as_date(paste(year, month, "01", sep = "-")),
+           !is.na(year) ~ as_date(paste(year, "01", "01", sep = "-")),
+           TRUE ~ NA_Date_)) %>% 
+  select(species_key, country_code, event_date, year,  individual_count) %>% 
+  rename(species_id = species_key) %>% 
+  # Drop remaining data where there is an NA for event date and year 
+  filter(!is.na(event_date), !is.na(year))
 
 # ----- Raw Occurrence table w/o geometry ----- 
 raw_occurrences_no_geom <- raw_occurrences_tbl %>% st_drop_geometry()
@@ -174,7 +170,9 @@ protection_sts_tbl <- st_join(
 ) %>%
   mutate(in_protected_area = !is.na(pa_id))
 
-protection_sts_tbl <- protection_sts_tbl %>% st_drop_geometry()
+protection_sts_tbl <- protection_sts_tbl %>% 
+  st_drop_geometry() %>%
+  mutate(pa_id = as.integer(pa_id))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##                                                                            --
@@ -188,5 +186,6 @@ write_csv(raw_occurrences_no_geom, "data/processed/occurrences_raw.csv")
 write_csv(occurrences_tbl, "data/processed/occurrences.csv")
 write_csv(countries_tbl, "data/processed/countries.csv")
 write_csv(protected_areas_no_geom, "data/processed/protected_areas.csv")
-write_csv(protection_sts_tbl, "data/processed/protection_sts.csv")
+write_csv(protection_sts_tbl, "data/processed/protection_sts.csv",  na = "")
+write_csv(common_names_tbl, "data/processed/common_names.csv")
 

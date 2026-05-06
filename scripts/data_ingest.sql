@@ -10,7 +10,6 @@ CREATE TABLE species AS
 CREATE TABLE protected_areas AS
     SELECT * FROM read_csv_auto('data/processed/protected_areas.csv');
 
-
 --- Countries Data ---
 CREATE TABLE countries AS
     SELECT * FROM read_csv_auto('data/processed/countries.csv');
@@ -28,3 +27,6 @@ CREATE TABLE occurrences_raw AS
 CREATE TABLE occurrences AS
     SELECT * FROM read_csv_auto('data/processed/occurrences.csv');
 
+--- Common names Data ---
+CREATE TABLE common_names AS
+    SELECT * FROM read_csv_auto('data/processed/common_names.csv');
