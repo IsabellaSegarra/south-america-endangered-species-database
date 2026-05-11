@@ -8,6 +8,9 @@ library(tidyverse)
 library(DBI)
 library(dbplyr)
 library(duckdb)
+library(ggplot2)
+library(ggtext)
+library(showtext)
 
 conn <- DBI::dbConnect(duckdb::duckdb(),
                        dbdir = "../threatened_sa.duckdb")
@@ -36,15 +39,131 @@ protected_areas_db
 occurrences_db <- tbl(conn, "occurrences")
 protected_areas_db <- tbl(conn, "protected_areas")
 countries_db <- tbl(conn, "countries")
+protection_status_db <- tbl(conn, "protection_status")
 
-# Step 2: Reproduce the query 
-occurrences_db %>%
-  inner_join(protected_areas_db, by = "species_id") %>%
+pa_ranked_db <- occurrences_db %>%
+  inner_join(protection_status_db, by = "species_id") %>%
   inner_join(countries_db, by = "country_code") %>%
   filter(in_protected_area == TRUE) %>%
   group_by(country_code, country_name) %>%
-  summarise(total_occurrences = n()) %>%
-  arrange(desc(total_occurrences))
+  summarise(total_occurrences = n(), .groups = "drop") %>%
+  arrange(desc(total_occurrences)) %>%
+  collect()
+
+# View the dataframe 
+View(pa_ranked_db)
+
+```
+
+```{r}
+# update font
+# increase spacing 
+# change grid line colors
+# highlight Chile with one color 
+# change other countries to be lighter color of that color
+# title
+
+font_add_google("Abyssinica SIL", "abyssinica")
+showtext_auto()
+
+# Colors 
+iucn_red <- "#da2a1c"   
+background <- "#222222"
+
+
+pa_ranked_db %>% 
+  mutate(highlight = ifelse(country_name == "Chile", "Chile", "Other")) %>%
+  ggplot(aes(x = reorder(country_name, total_occurrences), 
+             y = total_occurrences, fill = highlight)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = NULL, y = "Total Species Occurrences",
+       title = "Where Are Endangered Species Being Protected in South America?",
+       subtitle = "Chile leads with the most species occurrences found within protected areas.",
+       caption = "Data Sources: World Database on Protected Areas (WDPA)\nGlobal Biodiversity Information Facility (GBIF)\nInternational Union for Conservation of Nature (IUCN)") + 
+  theme_minimal() +
+  scale_fill_manual(values = c("Chile" = iucn_red, "Other" = "white")) +
+  scale_y_continuous(labels = scales::comma) + 
+  theme(text = element_text(family = "abyssinica"),
+        axis.title.x = element_text(color = "white", family = "abyssinica", size = 12, margin = margin(t = 10)),
+         axis.text.y = element_text(color = "white", family = "abyssinica", size = 12), 
+         axis.text.x = element_text(color = "white", family = "abyssinica", size = 12), 
+        legend.position = "none", 
+        plot.title = element_text(color = "white", family = "abyssinica",size = 15, margin = margin(t = 15)),
+        plot.subtitle =  element_text(color = "white", family = "abyssinica", margin = margin(t = 10)),
+        plot.caption = element_text(color = "white", family = "abyssinica", margin = margin(t = 13)),
+    panel.background = element_rect(fill = "black", color = NA),
+    plot.background = element_rect(fill = "black", color = NA),
+    panel.grid = element_blank())
+
+pa_ranked_db %>% 
+  mutate(highlight = ifelse(country_name == "Chile", "Chile", "Other")) %>%
+  ggplot(aes(x = reorder(country_name, total_occurrences), 
+             y = total_occurrences,
+             fill = highlight)) +
+  geom_col() +
+  geom_text(data = . %>% filter(country_name == "Chile"),
+            aes(label = scales::comma(total_occurrences)),
+            hjust = 1.1, color = "white", family = "abyssinica", size = 4) +
+  scale_fill_manual(values = c("Chile" = iucn_red, "Other" = "grey60")) +  
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = seq(0, 1500000, by = 500000)) +  
+  coord_flip() +
+  labs(x = NULL, y = "Total Species Occurrences",
+       title = "Where Are Endangered Species\nBeing Protected in South America?",  #
+       caption = "Data Sources: World Database on Protected Areas (WDPA)\nGlobal Biodiversity Information Facility (GBIF)\nInternational Union for Conservation of Nature (IUCN)") +
+  theme_minimal() +
+   theme(text = element_text(family = "abyssinica"),
+        axis.title.x = element_text(color = "white", family = "abyssinica", size = 12, margin = margin(t = 10)),
+         axis.text.y = element_text(color = "white", family = "abyssinica", size = 12), 
+         axis.text.x = element_text(color = "white", family = "abyssinica", size = 12), 
+        legend.position = "none", 
+         panel.grid.major.x = element_blank(),
+      panel.grid.major.y = element_blank(),
+        plot.title = element_text(color = "white", family = "abyssinica",size = 15, margin = margin(t = 15)),
+        plot.subtitle =  element_text(color = "white", family = "abyssinica", margin = margin(t = 10)),
+        plot.caption = element_text(color = "white", family = "abyssinica", margin = margin(t = 13)),
+    panel.background = element_rect(fill = background, color = background),
+    plot.background = element_rect(fill = background, color = background),
+    )
+```
+
+```{r}
+
+library(rnaturalearth)
+library(ggplot2)
+
+# Get SA country geometries
+sa_map <- ne_countries(continent = "South America", returnclass = "sf")
+
+# Join with your query results
+map_data <- sa_map %>%
+  left_join(pa_ranked_db, by = c("iso_a2" = "country_code"))
+
+# Plot
+ggplot(map_data) +
+  geom_sf(aes(fill = total_occurrences)) +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  labs(title = "Species Occurrences in Protected Areas",
+       fill = "Total Occurrences") +
+  theme_minimal()
+
+
+ggplot() +
+  geom_sf(data = map_data %>% filter(iso_a2 != "CL"), 
+          aes(fill = total_occurrences), color = "white", linewidth = 0.3) +
+  geom_sf(data = map_data %>% filter(iso_a2 == "CL"), 
+          fill = "#da2a1c", color = "white", linewidth = 0.3) +
+  scale_fill_gradient(low = "grey90", high = "grey30", na.value = "grey90") +
+  labs(title = "Where Are Endangered Species Being Protected?",
+       fill = "Total Occurrences") +
+  theme_minimal() +
+  theme(text = element_text(family = "abyssinica"),
+        panel.background = element_rect(fill = background, color = NA),
+        panel.grid = element_blank(),
+        legend.title = element_text(family = "abyssinica", color = "white"),
+        legend.text = element_text(family = "abyssinica", color = "white"),
+    plot.background = element_rect(fill = background, color = NA))
 
 ```
 
