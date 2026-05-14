@@ -1,28 +1,22 @@
 ---
-title: "data_viz"
+title: "Visualizing Species Occurrences"
 format: html
 ---
-
+# Utilizing `dbplyr` to visualize my database 
 ```{r}
-library(tidyverse)
-library(DBI)
-library(dbplyr)
-library(duckdb)
-library(ggplot2)
-library(ggtext)
-library(showtext)
-
+# Set-up 
+# Establish connection to database
 conn <- DBI::dbConnect(duckdb::duckdb(),
                        dbdir = "../threatened_sa.duckdb")
 
+# View tables in database 
 DBI::dbListTables(conn)
 ```
 
-```{r}
-protected_areas_db <- tbl(conn, " protected_areas")
-protected_areas_db
-```
+# Analytical question
+**What country has the most species occurrences that fall inside protected areas?**
 
+## SQL query 
 ```{sql connection=conn}
 
   SELECT c.country_name, COUNT(*) as total_occurrences FROM occurrences o
@@ -34,6 +28,7 @@ protected_areas_db
 
 ```
 
+## Replicate SQL query in R
 ```{r}
 # Step 1: Extract the dataframes used for this join
 occurrences_db <- tbl(conn, "occurrences")
@@ -41,11 +36,16 @@ protected_areas_db <- tbl(conn, "protected_areas")
 countries_db <- tbl(conn, "countries")
 protection_status_db <- tbl(conn, "protection_status")
 
+# Query database to get total species occurrences in protected areas by country
 pa_ranked_db <- occurrences_db %>%
+  # Join protection status
   inner_join(protection_status_db, by = "species_id") %>%
+  # Join countries to get country names
   inner_join(countries_db, by = "country_code") %>%
+  # Keep only occurrences that fall inside a protected area
   filter(in_protected_area == TRUE) %>%
   group_by(country_code, country_name) %>%
+  # Count total occurrences 
   summarise(total_occurrences = n(), .groups = "drop") %>%
   arrange(desc(total_occurrences)) %>%
   collect()
@@ -55,84 +55,75 @@ View(pa_ranked_db)
 
 ```
 
+## Visualize 
 ```{r}
-# update font
-# increase spacing 
-# change grid line colors
-# highlight Chile with one color 
-# change other countries to be lighter color of that color
-# title
+##~~~~~~~~~~~~~~
+##  ~ Set-Up  ----
+##~~~~~~~~~~~~~~
 
-font_add_google("Abyssinica SIL", "abyssinica")
+# Add custom font
+font_add_google("Spectral", "spectral")
 showtext_auto()
 
 # Colors 
-iucn_red <- "#da2a1c"   
+gbif_green <- "#76b376"
 background <- "#222222"
 
-
-pa_ranked_db %>% 
-  mutate(highlight = ifelse(country_name == "Chile", "Chile", "Other")) %>%
-  ggplot(aes(x = reorder(country_name, total_occurrences), 
-             y = total_occurrences, fill = highlight)) +
-  geom_col() +
-  coord_flip() +
-  labs(x = NULL, y = "Total Species Occurrences",
-       title = "Where Are Endangered Species Being Protected in South America?",
-       subtitle = "Chile leads with the most species occurrences found within protected areas.",
-       caption = "Data Sources: World Database on Protected Areas (WDPA)\nGlobal Biodiversity Information Facility (GBIF)\nInternational Union for Conservation of Nature (IUCN)") + 
-  theme_minimal() +
-  scale_fill_manual(values = c("Chile" = iucn_red, "Other" = "white")) +
-  scale_y_continuous(labels = scales::comma) + 
-  theme(text = element_text(family = "abyssinica"),
-        axis.title.x = element_text(color = "white", family = "abyssinica", size = 12, margin = margin(t = 10)),
-         axis.text.y = element_text(color = "white", family = "abyssinica", size = 12), 
-         axis.text.x = element_text(color = "white", family = "abyssinica", size = 12), 
-        legend.position = "none", 
-        plot.title = element_text(color = "white", family = "abyssinica",size = 15, margin = margin(t = 15)),
-        plot.subtitle =  element_text(color = "white", family = "abyssinica", margin = margin(t = 10)),
-        plot.caption = element_text(color = "white", family = "abyssinica", margin = margin(t = 13)),
-    panel.background = element_rect(fill = "black", color = NA),
-    plot.background = element_rect(fill = "black", color = NA),
-    panel.grid = element_blank())
-
-pa_ranked_db %>% 
+##~~~~~~~~~~~~~~
+##  ~ Bar-Chart  ----
+##~~~~~~~~~~~~~~
+occurrences_country_plot <- pa_ranked_db %>% 
+  # Create highlight for Chile
   mutate(highlight = ifelse(country_name == "Chile", "Chile", "Other")) %>%
   ggplot(aes(x = reorder(country_name, total_occurrences), 
              y = total_occurrences,
              fill = highlight)) +
   geom_col() +
+  # Add text highlight of Chile occurrences
   geom_text(data = . %>% filter(country_name == "Chile"),
             aes(label = scales::comma(total_occurrences)),
-            hjust = 1.1, color = "white", family = "abyssinica", size = 4) +
-  scale_fill_manual(values = c("Chile" = iucn_red, "Other" = "grey60")) +  
+            hjust = 1.1, color = "white", family = "spectral", size = 6) +
+  scale_fill_manual(values = c("Chile" = gbif_green, "Other" = "grey70")) +  
+  # Adjust scales 
   scale_y_continuous(labels = scales::comma, 
-                     breaks = seq(0, 1500000, by = 500000)) +  
-  coord_flip() +
+                     breaks = seq(0, 1500000, by = 500000), 
+                     expand = c(0, 0)) +  
+  # Flip x and y 
+  coord_flip(clip = "off") +
   labs(x = NULL, y = "Total Species Occurrences",
-       title = "Where Are Endangered Species\nBeing Protected in South America?",  #
+       title = "Where are threatened species most recorded in protected areas?",
+       subtitle = "Chile records the highest species occurrences across 268 protected areas.",
        caption = "Data Sources: World Database on Protected Areas (WDPA)\nGlobal Biodiversity Information Facility (GBIF)\nInternational Union for Conservation of Nature (IUCN)") +
-  theme_minimal() +
-   theme(text = element_text(family = "abyssinica"),
-        axis.title.x = element_text(color = "white", family = "abyssinica", size = 12, margin = margin(t = 10)),
-         axis.text.y = element_text(color = "white", family = "abyssinica", size = 12), 
-         axis.text.x = element_text(color = "white", family = "abyssinica", size = 12), 
+  theme_minimal(base_size = 20) +
+   theme(text = element_text(family = "spectral"),
+        axis.title.x = element_text(color = "white", family = "spectral", size = 15),
+         axis.text.y = element_text(color = "white", family = "spectral", size = 15), 
+         axis.text.x = element_text(color = "white", family = "spectral", size = 15), 
+        plot.margin = margin(20, 80, 20, 20),
         legend.position = "none", 
-         panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_line(color = "grey50", linewidth = 0.3),
+        panel.grid.major.x = element_blank(),
       panel.grid.major.y = element_blank(),
-        plot.title = element_text(color = "white", family = "abyssinica",size = 15, margin = margin(t = 15)),
-        plot.subtitle =  element_text(color = "white", family = "abyssinica", margin = margin(t = 10)),
-        plot.caption = element_text(color = "white", family = "abyssinica", margin = margin(t = 13)),
+        plot.title = element_text(color = "white", family = "spectral",size = 22, face = "bold", margin = margin(t = 15)),
+        plot.subtitle =  element_text(color = "grey70", family = "spectral", margin = margin(t = 10)),
+        plot.caption = element_text(color = "white", family = "spectral",size = 10, margin = margin(t = 13),
+                                    hjust = 0),
     panel.background = element_rect(fill = background, color = background),
     plot.background = element_rect(fill = background, color = background),
     )
+occurrences_country_plot
+
+# Save plot as png 
+showtext_opts(dpi = 300)
+
+ggsave(here("figures", "bar_chart.png"), 
+       plot = occurrences_country_plot, 
+       width = 12,
+       height = 8,
+       dpi = 300)
 ```
 
 ```{r}
-
-library(rnaturalearth)
-library(ggplot2)
-
 # Get SA country geometries
 sa_map <- ne_countries(continent = "South America", returnclass = "sf")
 
@@ -141,19 +132,11 @@ map_data <- sa_map %>%
   left_join(pa_ranked_db, by = c("iso_a2" = "country_code"))
 
 # Plot
-ggplot(map_data) +
-  geom_sf(aes(fill = total_occurrences)) +
-  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
-  labs(title = "Species Occurrences in Protected Areas",
-       fill = "Total Occurrences") +
-  theme_minimal()
-
-
-ggplot() +
+occurences_map <- ggplot() +
   geom_sf(data = map_data %>% filter(iso_a2 != "CL"), 
           aes(fill = total_occurrences), color = "white", linewidth = 0.3) +
   geom_sf(data = map_data %>% filter(iso_a2 == "CL"), 
-          fill = "#da2a1c", color = "white", linewidth = 0.3) +
+          fill = gbif_green, linewidth = 0.3) +
   scale_fill_gradient(low = "grey90", high = "grey30", na.value = "grey90") +
   labs(title = "Where Are Endangered Species Being Protected?",
        fill = "Total Occurrences") +
@@ -161,13 +144,26 @@ ggplot() +
   theme(text = element_text(family = "abyssinica"),
         panel.background = element_rect(fill = background, color = NA),
         panel.grid = element_blank(),
-        legend.title = element_text(family = "abyssinica", color = "white"),
-        legend.text = element_text(family = "abyssinica", color = "white"),
+        axis.text.x = element_blank(),
+         axis.text.y = element_blank(),
+         plot.title = element_text(color = "white", family = "spectral",size = 15, margin = margin(t = 15)),
+        legend.title = element_text(family = "spectral", color = "white"),
+        legend.text = element_text(family = "spectral", color = "white"),
     plot.background = element_rect(fill = background, color = NA))
+  
+occurences_map
+
+  # Save plot as png 
+showtext_opts(dpi = 300)
+ggsave(here("figures", "map.png"), 
+       plot = occurences_map, 
+       width = 16, 
+       height = 11,
+       dpi = 300)
 
 ```
 
-
+### Close DB connection
 ```{r}
 DBI::dbDisconnect(conn, shutdown = TRUE)
 ```
