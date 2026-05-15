@@ -8,12 +8,15 @@
 gbif <- fread(here("data", "raw", "gbif_sa.csv")) 
 
 # Protected areas ----
-# Load all 3 protected area files
+# Load all 3 protected area (polygons (pa_0), polygons (pa_1), and points(p_2))
+
+#Polygons
 pa_0 <- st_read(here("data","raw", "WDPA_WDOECM_Apr2026_Public_SA_shp_0", "WDPA_WDOECM_Apr2026_Public_SA_shp-polygons.shp"))
 
-
+# Polygons
 pa_1 <- st_read(here("data","raw","WDPA_WDOECM_Apr2026_Public_SA_shp_1", "WDPA_WDOECM_Apr2026_Public_SA_shp-polygons.shp"))
 
+# Point file 
 pa_2 <- st_read(here("data","raw", "WDPA_WDOECM_Apr2026_Public_SA_shp_2", 
                      "WDPA_WDOECM_Apr2026_Public_SA_shp-polygons.shp"))
 
