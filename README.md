@@ -62,11 +62,9 @@ The data for this database comes from the following places:
 -   **`threatened_sa.duckdb`** The DuckDB database file containing the processed database. 
 
 ## Reproducibility
-1.  **Data Access**: Begin with data access. *Disclaimer*: GBIF occurrence data changes daily as more data is added to the database and I recommend downloading the present data you are interested in.
+1. Clone this repository. 
 2. Run the `requirements.txt` and `environment.R` to set-up environment locally. 
-3.  **Data Cleaning**: Use `data_cleaning.R` to clean and export the files into the `processed` data folder.
-4.  **Data Ingestion**: Use `data_ingest.sql` to ingest the processed csv files into the database. 
-5.  **Data Querying**: Use the database to answer questions and make fun visualizations like below!
+5. Use the database to answer questions and make fun visualizations like below!
 
 <img src="figures/bar_chart.png" alt="Bar chart of species occurrences by country" width="90%"/>
 
