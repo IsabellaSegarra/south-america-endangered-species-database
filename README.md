@@ -4,11 +4,11 @@
 
 This repository is for a relational database on South American threatened species occurrences and protected areas. It can be used to track, visualize, and identify species occurrences within protected areas in Colombia, Brazil, Venezuela, Argentina, Chile, Peru, Bolivia, Ecuador, and Uruguay with names in both English and Spanish.
 
-<img src="images/black_backed_tanagerz_ebird.png" width="400"/>
+<img src="images/black_backed_tanagerz_ebird.png" width="800"/>
 
 © Raphael Kurz - Aves do Sul
 
-## Data Sources and Access
+## Data Sources
 
 The data for this database comes from the following places:
 
@@ -59,16 +59,16 @@ The data for this database comes from the following places:
     -   `data_ingest.sql` — SQL script for database ingestion
     -   `database_query.sql` — SQL script containing database queries
 
--   **`threatened_sa.duckdb`** The DuckDB database file containing the processed database.
+-   **`threatened_sa.duckdb`** The DuckDB database file containing the processed database. 
 
 ## Reproducibility
-
 1.  **Data Access**: Begin with data access. *Disclaimer*: GBIF occurrence data changes daily as more data is added to the database and I recommend downloading the present data you are interested in.
-2.  **Data Cleaning**: Use `data_cleaning.R` to clean and export the files into the `processed` data folder.
-3.  **Data Ingestion**: Use `data_ingest.sql` to ingest the processed csv files into the database.
-4.  **Data Querying**: Use the database to answer questions and make fun visualizations like below!
+2. Run the `requirements.txt` and `environment.R` to set-up environment locally. 
+3.  **Data Cleaning**: Use `data_cleaning.R` to clean and export the files into the `processed` data folder.
+4.  **Data Ingestion**: Use `data_ingest.sql` to ingest the processed csv files into the database. 
+5.  **Data Querying**: Use the database to answer questions and make fun visualizations like below!
 
-<img src="images/data_viz.png" alt="Bar chart of species occurrences by country" width="90%"/>
+<img src="figures/bar_chart.png" alt="Bar chart of species occurrences by country" width="90%"/>
 
 ## Database schema
 
@@ -81,3 +81,8 @@ GBIF.org (12 April 2026) GBIF Occurrence Download <https://doi.org/10.15468/dl.h
 UNEP-WCMC and IUCN (2026), Protected Planet: The World Database on Protected Areas (WDPA) and World Database on Other Effective Area-based Conservation Measures (WD-OECM) [Online], May 2026, Cambridge, UK: UNEP-WCMC and IUCN. Available at: www.protectedplanet.net.
 
 GBIF Secretariat (2023). GBIF Backbone Taxonomy. Checklist dataset <https://doi.org/10.15468/39omei> accessed via GBIF.org on 2026-04-12.
+
+## Acknowledgments
+This project was completed as part of the Masters of Environmental Data Science program at the Bren School of Environmental Science and Management for [EDS 213: Databases and Data Management course](https://ucsb-library-research-data-services.github.io/bren-eds213/). 
+
+I would like to give a special acknowledgement to the course instructors Julien Brun and Greg Janee and TA Annie Adams! 
