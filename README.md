@@ -63,14 +63,14 @@ The data for this database comes from the following places:
 
 ## Reproducibility
 
-1.  **Data Access**: Begin with data access. *Disclaimer*: GBIF occurrence data changes daily as more data is added to the database and I recommend downloading the present data you are interested in with or your machine can handle (\~1.8 GB).
+1.  **Data Access**: Begin with data access. *Disclaimer*: GBIF occurrence data changes daily as more data is added to the database and I recommend downloading the present data you are interested in.
 2.  **Data Cleaning**: Use `data_cleaning.R` to clean and export the files into the `processed` data folder.
 3.  **Data Ingestion**: Use `data_ingest.sql` to ingest the processed csv files into the database.
-4.  **Data Querying**: Use the database to answer questions!
+4.  **Data Querying**: Use the database to answer questions and make fun visualizations like below!
 
 <img src="images/data_viz.png" alt="Bar chart of species occurrences by country" width="90%"/>
 
-\## Database schema
+## Database schema
 
 ![Database schema created by Claude AI](images/database_schema.png)
 
