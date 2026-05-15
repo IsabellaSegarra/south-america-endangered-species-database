@@ -4,14 +4,16 @@
 
 This repository is for a relational database on South American threatened species occurrences and protected areas. It can be used to track, visualize, and identify species occurrences within protected areas in Colombia, Brazil, Venezuela, Argentina, Chile, Peru, Bolivia, Ecuador, and Uruguay with names in both English and Spanish.
 
-![© Raphael Kurz - Aves do Sul](images/black_backed_tanagerz_ebird.png){width="50%"}
+<img src="images/black_backed_tanagerz_ebird.png" width="400"/>
+
+© Raphael Kurz - Aves do Sul
 
 ## Data Sources and Access
 
 The data for this database comes from the following places:
 
 | Data Type | Dataset | Data Source | Data Access |
-|----|----|----|----|
+|------------------|------------------|------------------|------------------|
 | Species occurrences | [Global Biodiversity Information Facility (GBIF)](https://www.gbif.org/) | Data for research-grade species occurrences. | Queried for all present, research-grade observations recorded by machine or human observation, containing coordinates, and belonging to the following [IUCN Red List](https://www.iucnredlist.org/) categories: Critically Endangered (CR), Endangered (EN), Vulnerable (VU), and Near Threatened (NT). Downloaded April 12, 2026; includes species occurrences from 1880 to present. |
 | Common names | [GBIF Backbone Taxonomy](https://www.gbif.org/dataset/d7dddbf4-2cf0-4f39-9b2a-bb099caae36c#description) | Common names of species based on GBIF's backbone taxonomy — a unified classification system that enables GBIF to integrate, search, and cross-reference species names. | Common names were extracted from the `VernacularName.tsv` file included in the GBIF backbone taxonomy ZIP archive. |
 | Protected areas | [World Database on Protected and Conserved Areas (WDPCA)](https://www.protectedplanet.net/en) | The most current, comprehensive database of protected areas and conservation measures, updated monthly from global contributors. | Data was downloaded for the Latin America and Caribbean region. WDPCA distributes protected area data separately for polygons and points. Three shapefiles were downloaded: `shp0` (larger polygons), `shp1` (smaller polygons), and `shp2` (points). |
@@ -40,25 +42,24 @@ The data for this database comes from the following places:
 └── threatened_sa.duckdb
 ```
 
-**Important files**: - **`Data/`**\
-Contains the raw data files, which have been added to `.gitignore`. The `processed/` subfolder contains the cleaned `.csv` files used for database ingestion.
+**Important files**:
 
--   **`environment.R`**\
-    Script used to install and load the required R libraries and dependencies.
+-   **`Data/`** Contains the raw data files, which have been added to `.gitignore`. The `processed/` subfolder contains the cleaned `.csv` files used for database ingestion.
 
--   **`requirements.txt`**\
-    Saved session and package information used to reproduce the database environment.
+<!-- -->
 
--   **`scripts/`**\
-    Contains scripts used for data processing, ingestion, querying, and visualization:
+-   **`environment.R`** Script used to install and load the required R libraries and dependencies.
 
-    -   `data_cleaning.R` — imports and cleans raw data\
-    -   `data_viz.qmd` — visualizes database queries using `dbplyr`\
-    -   `data_ingest.sql` — SQL script for database ingestion\
+-   **`requirements.txt`** Saved session and package information used to reproduce the database environment.
+
+-   **`scripts/`** Contains scripts used for data processing, ingestion, querying, and visualization:
+
+    -   `data_cleaning.R` — imports and cleans raw data
+    -   `data_viz.qmd` — visualizes database queries using `dbplyr`
+    -   `data_ingest.sql` — SQL script for database ingestion
     -   `database_query.sql` — SQL script containing database queries
 
--   **`threatened_sa.duckdb`**\
-    The DuckDB database file containing the processed database.
+-   **`threatened_sa.duckdb`** The DuckDB database file containing the processed database.
 
 ## Reproducibility
 
@@ -67,9 +68,9 @@ Contains the raw data files, which have been added to `.gitignore`. The `process
 3.  **Data Ingestion**: Use `data_ingest.sql` to ingest the processed csv files into the database.
 4.  **Data Querying**: Use the database to answer questions!
 
-![Bar chart of species occurrences by country](images/data_viz.png){width="90%"}
+<img src="images/data_viz.png" alt="Bar chart of species occurrences by country" width="90%"/>
 
-## Database schema
+\## Database schema
 
 ![Database schema created by Claude AI](images/database_schema.png)
 
